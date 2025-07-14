@@ -36,6 +36,7 @@ return new class extends Migration
             $table->text('address');
             $table->longText('essay');
             $table->string('office');
+            $table->string('image');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

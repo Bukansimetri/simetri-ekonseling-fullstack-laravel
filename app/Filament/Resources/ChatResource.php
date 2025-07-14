@@ -17,6 +17,8 @@ class ChatResource extends Resource
 
     protected static ?string $navigationGroup = 'Chat Management';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     public static function form(Form $form): Form
     {
         return $form

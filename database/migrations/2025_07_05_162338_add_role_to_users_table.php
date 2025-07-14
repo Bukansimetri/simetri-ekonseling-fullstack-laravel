@@ -9,10 +9,10 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            //
+            $table->enum('role', ['student', 'counselor', 'lab_staff', 'lab_admin'])->default('student');
         });
     }
 

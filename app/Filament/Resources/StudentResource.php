@@ -14,9 +14,14 @@ class StudentResource extends Resource
 {
     protected static ?string $model = Student::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-user';
 
-    protected static ?string $navigationGroup = 'User Management';
+    protected static ?string $navigationGroup = 'User Detail Management';
+
+    public static function canCreate(): bool
+    {
+        return false; // This will remove the "Create" button entirely
+    }
 
     public static function form(Form $form): Form
     {

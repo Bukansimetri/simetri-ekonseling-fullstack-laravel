@@ -22,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -39,6 +40,16 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+    public function student()
+    {
+        return $this->hasOne(Student::class);
+    }
+
+    public function counselor()
+    {
+        return $this->hasOne(Counselor::class);
+    }
+
     protected function casts(): array
     {
         return [
@@ -60,5 +71,15 @@ class User extends Authenticatable
     public function chatGroups()
     {
         return $this->belongsToMany(ChatGroup::class, 'chat_group_user');
+    }
+
+    public function studentAppointments()
+    {
+        return $this->hasMany(Appointment::class, 'student_id');
+    }
+
+    public function counselorAppointments()
+    {
+        return $this->hasMany(Appointment::class, 'counselor_id');
     }
 }
