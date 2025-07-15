@@ -34,7 +34,6 @@ class AppointmentResource extends Resource
                     ->required(),
 
                 Forms\Components\TextInput::make('link_meeting')
-                    ->url()
                     ->maxLength(255)
                     ->required()
                     ->helperText('Changing this will send WhatsApp notifications'),
@@ -85,8 +84,7 @@ class AppointmentResource extends Resource
                         'done' => 'Completed',
                     }),
 
-                Tables\Columns\TextColumn::make('link_meeting')
-                    ->limit(30),
+                Tables\Columns\TextColumn::make('link_meeting'),
             ])
             ->filters([
                 // ... (keep your existing filters)
@@ -185,6 +183,12 @@ class AppointmentResource extends Resource
                 ->send();
         }
     }
+
+    // Contoh di Resource
+public static function getEloquentQuery()
+{
+    return parent::getEloquentQuery()->with(['student', 'counselor']);
+}
 
     public static function getRelations(): array
     {

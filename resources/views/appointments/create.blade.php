@@ -6,14 +6,6 @@
             <div class="counselor-info">
                 <h3>{{ $counselor->name }}</h3>
                 <p>{{ $counselor->education }}</p>
-                <div class="counselor-rating">
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star-half-alt"></i>
-                    <span>({{ rand(50, 200) }} ulasan)</span>
-                </div>
             </div>
         </div>
 

@@ -10,19 +10,15 @@ use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
 {
-    // Menampilkan halaman profil
     public function show()
     {
         $user = Auth::user();
 
-        // Load relasi berdasarkan role
         if ($user->role === 'student') {
             $user->load('student');
         } elseif ($user->role === 'counselor') {
             $user->load('counselor');
         }
-
-        // dd($user->student);
 
         return view('profile.show', [
             'user' => $user,
@@ -30,81 +26,105 @@ class ProfileController extends Controller
         ]);
     }
 
-    // Memproses update profil
     public function update(Request $request)
     {
         $user = Auth::user();
 
-        // Validasi dasar untuk semua user
         $rules = [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
-            'phone' => 'nullable|string|max:20',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'current_password' => 'nullable|string',
             'new_password' => ['nullable', 'string', Password::min(8)->mixedCase()->numbers()->symbols()],
             'new_password_confirmation' => 'nullable|same:new_password',
         ];
 
-        // Tambahkan validasi khusus berdasarkan role
+        // Tambahkan validasi berdasarkan role
         if ($user->role === 'student') {
             $rules = array_merge($rules, [
-                'nim' => 'nullable|string|max:20',
-                'university' => 'nullable|string|max:100',
-                'faculty' => 'nullable|string|max:100',
-                'study_program' => 'nullable|string|max:100',
+                'name' => 'required|string|max:255',
+                'username' => 'nullable|string|max:20',
+                'email' => 'required|string|email|max:255|unique:students,email,' . $user->student->id,
+                'phone' => 'nullable|string|max:20',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'place_of_birth' => 'nullable|string|max:100',
+                'date_of_birth' => 'nullable|string|max:100',
+                'address' => 'nullable|string|max:100',
+                'etnic' => 'nullable|string|max:100',
+                'bio' => 'nullable|string|max:255',
+                'hobby' => 'nullable|string|max:100',
             ]);
         } elseif ($user->role === 'counselor') {
             $rules = array_merge($rules, [
-                'specialization' => 'nullable|string|max:100',
-                'education' => 'nullable|string',
+                'name' => 'required|string|max:255',
+                'username' => 'nullable|string|max:20',
+                'email' => 'required|string|email|max:255|unique:counselors,email,' . $user->counselor->id,
+                'phone' => 'nullable|string|max:20',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'education' => 'nullable|string|max:100',
                 'experience' => 'nullable|string',
-                'price' => 'nullable|numeric|min:0',
+                'address' => 'nullable|string',
+                'essay' => 'nullable|string',
+                'office' => 'nullable|string',
             ]);
         }
 
-        $validatedData = $request->validate($rules);
+        $validated = $request->validate($rules);
 
-        // Update password jika diisi
-        if (! empty($validatedData['current_password'])) {
-            if (! Hash::check($validatedData['current_password'], $user->password)) {
+        // Update password
+        if (!empty($validated['current_password'])) {
+            if (!Hash::check($validated['current_password'], $user->password)) {
                 return back()->withErrors(['current_password' => 'Password saat ini tidak sesuai']);
             }
 
-            $user->password = Hash::make($validatedData['new_password']);
+            $user->password = Hash::make($validated['new_password']);
+            $user->save();
         }
 
-        // Update foto profil jika diupload
-        if ($request->hasFile('image')) {
-            // Hapus foto lama jika bukan default
-            if ($user->image !== 'default.jpg') {
-                Storage::delete('public/'.$user->image);
+        // Update berdasarkan role
+        if ($user->role === 'student' && $user->student) {
+            $student = $user->student;
+
+            // Update foto jika ada
+            if ($request->hasFile('image')) {
+                if ($student->image && $student->image !== 'default.jpg') {
+                    Storage::delete('public/' . $student->image);
+                }
+
+                $student->image = $request->file('image')->store('profile_images', 'public');
             }
 
-            $imagePath = $request->file('image')->store('profile_images', 'public');
-            $user->image = $imagePath;
-        }
-
-        // Update data user utama
-        $user->name = $validatedData['name'];
-        $user->email = $validatedData['email'];
-        $user->phone = $validatedData['phone'] ?? null;
-        $user->save();
-
-        // Update data relasi berdasarkan role
-        if ($user->role === 'student' && $user->student) {
-            $user->student->update([
-                'nim' => $validatedData['nim'] ?? null,
-                'university' => $validatedData['university'] ?? null,
-                'faculty' => $validatedData['faculty'] ?? null,
-                'study_program' => $validatedData['study_program'] ?? null,
+            $student->update([
+                'name' => $validated['name'],
+                'username' => $validated['username'] ?? null,
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? null,
+                'place_of_birth' => $validated['place_of_birth'] ?? null,
+                'date_of_birth' => $validated['date_of_birth'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'etnic' => $validated['etnic'] ?? null,
+                'bio' => $validated['bio'] ?? null,
+                'hobby' => $validated['hobby'] ?? null,
             ]);
         } elseif ($user->role === 'counselor' && $user->counselor) {
-            $user->counselor->update([
-                'specialization' => $validatedData['specialization'] ?? null,
-                'education' => $validatedData['education'] ?? null,
-                'experience' => $validatedData['experience'] ?? null,
-                'price' => $validatedData['price'] ?? null,
+            $counselor = $user->counselor;
+
+            // Update foto jika ada
+            if ($request->hasFile('image')) {
+                if ($counselor->image && $counselor->image !== 'default.jpg') {
+                    Storage::delete('public/' . $counselor->image);
+                }
+
+                $counselor->image = $request->file('image')->store('profile_images', 'public');
+            }
+
+            $counselor->update([
+                'name' => $validated['name'],
+                'username' => $validated['username'] ?? null,
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? null,
+                'education' => $validated['education'] ?? null,
+                'experience' => $validated['experience'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'essay' => $validated['essay'] ?? null,
+                'office' => $validated['office'] ?? null,
             ]);
         }
 

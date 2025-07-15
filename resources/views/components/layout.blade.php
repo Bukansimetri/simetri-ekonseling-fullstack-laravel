@@ -118,11 +118,10 @@
                                 $photo = asset('storage/'.$user->counselor->image);
                             }
                         @endphp
-
                         <!-- Jika sudah login -->
                         <div class="user-profile dropdown">
                             <button class="dropdown-toggle" id="dropdownToggle">
-                                <img src="{{ $photo }}" alt="User Profile" style="border-radius: 50%; width: 40px; height: 40px;">
+                                <img src="{{ asset('storage/' . ($user->student?->image ?? $user->counselor?->image ?? 'default.jpg')) }}" alt="User Profile" style="border-radius: 50%; width: 40px; height: 40px;">
                                 <span>Hi, {{ $name }}</span>
                                 <i class="fas fa-caret-down"></i>
                             </button>

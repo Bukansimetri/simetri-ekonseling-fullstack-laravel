@@ -15,12 +15,14 @@ class AppointmentController extends Controller
         $user = Auth::user();
 
         if ($user->role === 'student') {
-            $appointments = Appointment::where('student_id', $user->id)
+            $user->load('student');
+            $appointments = Appointment::where('student_id', $user->student->id)
                 ->with('counselor.user')
                 ->latest()
                 ->get();
         } elseif ($user->role === 'counselor') {
-            $appointments = Appointment::where('counselor_id', $user->id)
+            $user->load('counselor');
+            $appointments = Appointment::where('counselor_id', $user->counselor->id)
                 ->with('student.user')
                 ->latest()
                 ->get();

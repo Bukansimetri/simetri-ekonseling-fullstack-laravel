@@ -146,15 +146,11 @@
                             <h4 id="profileName"></h4>
                             <div class="profile-meta">
                                 <span><i class="fas fa-clock"></i> <span id="profileAvailability"></span></span>
-                                <span><i class="fas fa-graduation-cap"></i> <span id="profileEducationShort">S1 Psikologi</span></span>
                             </div>
                         </div>
                     </div>
 
                     <div class="profile-details">
-                        <h5>Spesialisasi</h5>
-                        <p id="profileSpecialty">Psikolog Klinis, Konseling Remaja</p>
-
                         <h5>Tentang Saya</h5>
                         <p id="profileBio"></p>
 
@@ -227,7 +223,6 @@
 
                     // Set profile data
                     document.getElementById('profileName').textContent = counselor.name;
-                    document.getElementById('profileSpecialty').textContent = counselor.specialty;
                     document.getElementById('profileBio').textContent = counselor.bio;
 
                     document.getElementById('profileAvailability').textContent = counselor.availability;
@@ -300,7 +295,7 @@
 
                 const scheduledAt = `${date} ${time}:00`;
 
-                fetch('/appointments', {
+                fetch('/appointments/store', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

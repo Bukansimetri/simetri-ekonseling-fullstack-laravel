@@ -11,39 +11,12 @@ class CounselorController extends Controller
     {
         $query = Counselor::query();
 
-        // // Filter spesialisasi
-        // if ($request->has('specializations')) {
-        //     $query->whereIn('specialization', $request->specializations);
-        // }
-
-        // // Filter rating
-        // if ($request->has('ratings')) {
-        //     $ratings = array_map('intval', $request->ratings);
-        //     $query->whereIn('rating', $ratings);
-        // }
-
-        // // Filter ketersediaan
-        // if ($request->has('availability')) {
-        //     if (in_array('available_now', $request->availability)) {
-        //         $query->where('is_active', 1);
-        //     }
-        // }
-
-        // // Filter bahasa (contoh field: languages -> JSON array di DB)
-        // if ($request->has('languages')) {
-        //     foreach ($request->languages as $language) {
-        //         $query->whereJsonContains('languages', $language);
-        //     }
-        // }
-
-        // // Sorting
-        // if ($request->sort_by == 'price_low') {
-        //     $query->orderBy('price', 'asc');
-        // } elseif ($request->sort_by == 'price_high') {
-        //     $query->orderBy('price', 'desc');
-        // } else {
-        //     $query->orderBy('rating', 'desc'); // default sort by rating
-        // }
+        // Filter ketersediaan
+        if ($request->has('availability')) {
+            if (in_array('available_now', $request->availability)) {
+                $query->where('is_active', 1);
+            }
+        }
 
         $counselors = $query->paginate(6)->withQueryString();
 
