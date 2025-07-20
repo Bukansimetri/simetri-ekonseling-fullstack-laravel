@@ -15,7 +15,9 @@ class CounselorResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user';
 
-    protected static ?string $navigationGroup = 'User Detail Management';
+    protected static ?string $navigationLabel = 'Konselor';
+
+    protected static ?string $navigationGroup = 'Kelola Pengguna';
 
     public static function canCreate(): bool
     {

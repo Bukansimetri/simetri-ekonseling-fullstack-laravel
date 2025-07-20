@@ -100,6 +100,21 @@
                     <form id="appointmentForm">
                         <input type="hidden" id="counselorId" name="counselor_id">
 
+                        <!-- Radio untuk memilih tipe appointment -->
+                        <div class="form-group">
+                            <label>Tipe Konseling</label>
+                            <div class="radio-group">
+                                <label class="radio-option">
+                                    <input type="radio" name="appointment_type" value="individual" checked>
+                                    <span class="radio-label">Individual</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="appointment_type" value="group">
+                                    <span class="radio-label">Group</span>
+                                </label>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label for="appointmentDate">Tanggal Konseling</label>
                             <input type="date" id="appointmentDate" name="date" required min="">
@@ -119,9 +134,22 @@
                             </select>
                         </div>
 
+                        <!-- Field tambahan untuk group appointment (awalnya tersembunyi) -->
+                        <div id="groupFields" style="display: none;">
+                            <div class="form-group">
+                                <label for="additionalStudents">Tambahkan Anggota Group</label>
+                                <select id="additionalStudents" name="additional_students[]" multiple class="select2">
+                                    @foreach($otherStudents as $student)
+                                        <option value="{{ $student->id }}">{{ $student->user->name }} ({{ $student->university }})</option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted">Pilih maksimal 4 anggota tambahan</small>
+                            </div>
+                        </div>
+
                         <div class="form-group">
-                            <label for="appointmentNotes">Note (Opsional)</label>
-                            <textarea id="appointmentNotes" name="notes" placeholder="Tulis Note Konseling"></textarea>
+                            <label for="appointmentNotes">Catatan (Opsional)</label>
+                            <textarea id="appointmentNotes" name="notes" placeholder="Tulis catatan konseling"></textarea>
                         </div>
                     </form>
                 </div>
@@ -172,8 +200,27 @@
             </div>
         </div>
     </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Tunggu jQuery dan DOM siap
+        $(function() {
+            $('#additionalStudents').select2({
+                placeholder: "Pilih anggota group",
+                maximumSelectionLength: 4
+            });
+        });
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Toggle group fields based on appointment type
+            $('input[name="appointment_type"]').change(function() {
+                if ($(this).val() === 'group') {
+                    $('#groupFields').slideDown();
+                } else {
+                    $('#groupFields').slideUp();
+                }
+            });
+
             // Modal functionality
             const appointmentModal = document.getElementById('appointmentModal');
             const profileModal = document.getElementById('profileModal');
@@ -287,6 +334,8 @@
                 const time = modal.querySelector('#appointmentTime').value;
                 const notes = modal.querySelector('#appointmentNotes').value;
                 const counselorId = modal.querySelector('#counselorId').value;
+                const appointmentType = $('input[name="appointment_type"]:checked').val();
+                const additionalStudents = $('#additionalStudents').val() || [];
 
                 if (!date || !time) {
                     alert('Harap lengkapi semua field yang wajib diisi!');
@@ -294,44 +343,41 @@
                 }
 
                 const scheduledAt = `${date} ${time}:00`;
+                const endpoint = appointmentType === 'group' ? '/appointments/group' : '/appointments/store';
 
-                fetch('/appointments/store', {
+                const requestData = {
+                    counselor_id: counselorId,
+                    scheduled_at: scheduledAt,
+                    notes: notes,
+                    status: 'pending'
+                };
+
+                if (appointmentType === 'group') {
+                    requestData.additional_students = additionalStudents;
+                }
+
+                fetch(endpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    body: JSON.stringify({
-                        counselor_id: counselorId,
-                        scheduled_at: scheduledAt,
-                        notes: notes,
-                        status: 'Open'
-                    })
+                    body: JSON.stringify(requestData)
                 })
-                .then(response => {
-                    const contentType = response.headers.get('content-type');
-                    if (contentType && contentType.includes('application/json')) {
-                        return response.json();
-                    } else {
-                        throw new Error('Server returned HTML instead of JSON');
-                    }
-                })
+                .then(response => response.json())
                 .then(data => {
-                    alert(data.message);
-                    modal.style.display = 'none';
+                    if (data.success) {
+                        alert('Appointment berhasil dibuat!');
+                        window.location.reload();
+                    } else {
+                        alert('Gagal membuat appointment: ' + (data.message || 'Terjadi kesalahan'));
+                    }
                 })
                 .catch(error => {
-                    console.error('Fetch Error Detail:', error);
-                    if (error.errors) {
-                        let messages = Object.values(error.errors).flat().join('\n');
-                        alert(`Gagal membuat janji:\n${messages}`);
-                    } else {
-                        alert('Terjadi kesalahan saat mengirim data.\n' + error.message);
-                    }
+                    console.error('Error:', error);
+                    alert('Terjadi kesalahan saat mengirim data');
                 });
             });
-
-
 
             // Counselor rating hover effect
             const counselorCards = document.querySelectorAll('.counselor-card');

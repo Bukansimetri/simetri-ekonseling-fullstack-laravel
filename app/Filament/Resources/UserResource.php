@@ -16,7 +16,11 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
+    protected static ?string $modelLabel = 'Admin';
+
     protected static ?string $navigationIcon = 'heroicon-o-users';
+
+    protected static ?string $navigationLabel = 'Admin';
 
     public static function form(Form $form): Form
     {
@@ -25,6 +29,7 @@ class UserResource extends Resource
                 Forms\Components\Section::make('User Information')
                     ->schema([
                         Forms\Components\TextInput::make('name')
+                            ->label('Nama')
                             ->required()
                             ->maxLength(255),
 
@@ -35,7 +40,7 @@ class UserResource extends Resource
                             ->unique(ignoreRecord: true),
 
                         Forms\Components\Select::make('role')
-                            ->label('Web Role')
+                            ->label('Peran Web')
                             ->options([
                                 'student' => 'Student',
                                 'counselor' => 'Counselor',
@@ -46,6 +51,7 @@ class UserResource extends Resource
                             ->reactive(),
 
                         Forms\Components\TextInput::make('password')
+                            ->label('Kata Sandi')
                             ->password()
                             ->required(fn (string $context): bool => $context === 'create')
                             ->rule(Password::default())
@@ -53,10 +59,10 @@ class UserResource extends Resource
                             ->dehydrateStateUsing(fn (string $state): string => Hash::make($state)),
 
                         Forms\Components\DateTimePicker::make('email_verified_at')
-                            ->label('Email Verified At'),
+                            ->label('Email Verifikasi Pada'),
 
                         Forms\Components\Select::make('roles')
-                            ->label('Admin Role')
+                            ->label('Peran Admin')
                             ->relationship('roles', 'name')
                             ->multiple()
                             ->preload(),
@@ -69,6 +75,7 @@ class UserResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nama')
                     ->searchable()
                     ->sortable(),
 
@@ -77,6 +84,7 @@ class UserResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('role')
+                    ->label('Peran Web')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'student' => 'success',
@@ -90,6 +98,7 @@ class UserResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('email_verified_at')
+                    ->label('Email Verifikasi Pada')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -100,6 +109,7 @@ class UserResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('role')
+                    ->label('Peran')
                     ->options([
                         'student' => 'Student',
                         'counselor' => 'Counselor',

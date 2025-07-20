@@ -14,9 +14,13 @@ class StudentResource extends Resource
 {
     protected static ?string $model = Student::class;
 
+    protected static ?string $modelLabel = 'Mahasiswa';
+
     protected static ?string $navigationIcon = 'heroicon-o-user';
 
-    protected static ?string $navigationGroup = 'User Detail Management';
+    protected static ?string $navigationLabel = 'Mahasiswa';
+
+    protected static ?string $navigationGroup = 'Kelola Pengguna';
 
     public static function canCreate(): bool
     {
@@ -27,24 +31,25 @@ class StudentResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name'),
-                Forms\Components\TextInput::make('username'),
+                Forms\Components\TextInput::make('name')->label('Nama'),
+                Forms\Components\TextInput::make('username')->label('NIM'),
                 Forms\Components\TextInput::make('email'),
-                Forms\Components\TextInput::make('phone'),
-                Forms\Components\TextInput::make('place_of_birth'),
-                Forms\Components\DatePicker::make('date_of_birth'),
+                Forms\Components\TextInput::make('phone')->label('No. Telfon'),
+                Forms\Components\TextInput::make('place_of_birth')->label('Tempat Lahir'),
+                Forms\Components\DatePicker::make('date_of_birth')->label('Tanggal Lahir'),
                 Forms\Components\Select::make('etnic')
-                    ->label('Ethnic')
+                    ->label('Suku')
                     ->options([
                         'jawa' => 'Jawa',
                         'batak' => 'Batak',
                         'sunda' => 'Sunda',
                     ])
                     ->searchable(),
-                Forms\Components\TextInput::make('hobby'),
-                Forms\Components\Textarea::make('bio'),
-                Forms\Components\Textarea::make('address'),
+                Forms\Components\TextInput::make('hobby')->label('Hobi'),
+                Forms\Components\Textarea::make('bio')->label('Biografi'),
+                Forms\Components\Textarea::make('address')->label('Alamat'),
                 Forms\Components\FileUpload::make('image')
+                    ->label('Gambar')
                     ->directory('student-images'),
             ]);
     }
@@ -53,11 +58,11 @@ class StudentResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('image'),
-                Tables\Columns\TextColumn::make('name'),
-                Tables\Columns\TextColumn::make('username'),
+                Tables\Columns\ImageColumn::make('image')->label('Gambar'),
+                Tables\Columns\TextColumn::make('name')->label('Nama Lengkap'),
+                Tables\Columns\TextColumn::make('username')->label('NIM'),
                 Tables\Columns\TextColumn::make('email'),
-                Tables\Columns\TextColumn::make('phone'),
+                Tables\Columns\TextColumn::make('phone')->label('No. Telfon'),
             ])
             ->filters([
                 //

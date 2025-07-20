@@ -2066,6 +2066,26 @@ footer {
     line-height: 1.6;
 }
 
+.radio-group {
+    display: flex;
+    gap: 15px;
+    margin-top: 8px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.radio-option input {
+    margin-right: 8px;
+}
+
+.select2 {
+    width: 100% !important;
+}
+
 /* Modal Footer */
 .modal-footer {
     padding: 15px 20px;

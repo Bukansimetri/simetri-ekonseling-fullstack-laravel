@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Counselor;
+use App\Models\Student;
 use Illuminate\Http\Request;
 
 class CounselorController extends Controller
@@ -18,9 +19,17 @@ class CounselorController extends Controller
             }
         }
 
+        // Jika user adalah student, ambil daftar student lain untuk pilihan group
+        $otherStudents = [];
+        if (auth()->user()->role === 'student') {
+            $otherStudents = Student::where('id', '!=', auth()->user()->student->id)
+                ->with('user')
+                ->get();
+        }
+
         $counselors = $query->paginate(6)->withQueryString();
 
-        return view('counselors.index', compact('counselors'));
+        return view('counselors.index', compact('counselors', 'otherStudents'));
     }
 
     public function apiIndex()

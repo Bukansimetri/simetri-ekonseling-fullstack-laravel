@@ -14,17 +14,21 @@ class ServiceResource extends Resource
 {
     protected static ?string $model = Service::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-bars-3';
+    protected static ?string $modelLabel = 'Jasa';
 
-    protected static ?string $navigationGroup = 'Landing Page';
+    protected static ?string $navigationIcon = 'heroicon-o-bars-2';
+
+    protected static ?string $navigationGroup = 'Kelola Beranda';
+
+    protected static ?string $navigationLabel = 'Jasa';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('title'),
-                Forms\Components\TextInput::make('icon_class'),
-                Forms\Components\Textarea::make('description'),
+                Forms\Components\TextInput::make('title')->label('Judul'),
+                Forms\Components\TextInput::make('icon_class')->label('Kelas Icon'),
+                Forms\Components\Textarea::make('description')->label('Deskripsi'),
                 Forms\Components\Toggle::make('is_active'),
             ]);
     }
@@ -33,9 +37,9 @@ class ServiceResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('title'),
-                Tables\Columns\TextColumn::make('description'),
-                Tables\Columns\TextColumn::make('icon_class'),
+                Tables\Columns\TextColumn::make('title')->label('Judul'),
+                Tables\Columns\TextColumn::make('description')->label('Deskripsi'),
+                Tables\Columns\TextColumn::make('icon_class')->label('Kelas Ikon'),
             ])
             ->filters([
                 //

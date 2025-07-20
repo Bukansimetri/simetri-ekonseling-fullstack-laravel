@@ -16,15 +16,20 @@ class AppointmentResource extends Resource
 {
     protected static ?string $model = Appointment::class;
 
+    protected static ?string $modelLabel = 'Jadwal Konseling';
+
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
 
-    protected static ?string $navigationGroup = 'Schedule Management';
+    protected static ?string $navigationLabel = 'Jadwal Konseling';
+
+    protected static ?string $navigationGroup = 'Kelola Jadwal Konseling';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Select::make('status')
+                    ->label('Status')
                     ->options([
                         'pending' => 'Pending',
                         'accepted' => 'Accepted',
@@ -34,25 +39,27 @@ class AppointmentResource extends Resource
                     ->required(),
 
                 Forms\Components\TextInput::make('link_meeting')
+                    ->label('Link Konseling')
                     ->maxLength(255)
                     ->required()
                     ->helperText('Changing this will send WhatsApp notifications'),
 
-                Forms\Components\Section::make('Appointment Details (Read Only)')
+                Forms\Components\Section::make('Detail Jadwal Konseling (Read Only)')
                     ->schema([
                         Forms\Components\TextInput::make('student.name')
-                            ->label('Student'),
+                            ->label('Nama Mahasiswa'),
 
                         Forms\Components\TextInput::make('student.phone')
-                            ->label('Student Phone'),
+                            ->label('No Telfon Mahasiswa'),
 
                         Forms\Components\TextInput::make('counselor.name')
-                            ->label('Counselor'),
+                            ->label('Nama Konselor'),
 
                         Forms\Components\TextInput::make('counselor.phone')
-                            ->label('Counselor Phone'),
+                            ->label('No Telfon Konselor'),
 
-                        Forms\Components\DateTimePicker::make('scheduled_at'),
+                        Forms\Components\DateTimePicker::make('scheduled_at')
+                            ->label('Di Jadwalkan Pada'),
                     ])
                     ->columns(2)
                     ->disabled(),
@@ -64,14 +71,17 @@ class AppointmentResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('student.name')
+                    ->label('Mahasiswa')
                     ->sortable()
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('counselor.name')
+                    ->label('Konselor')
                     ->sortable()
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('scheduled_at')
+                    ->label('Di Jadwalkan Pada')
                     ->dateTime()
                     ->sortable(),
 
@@ -84,7 +94,8 @@ class AppointmentResource extends Resource
                         'done' => 'Completed',
                     }),
 
-                Tables\Columns\TextColumn::make('link_meeting'),
+                Tables\Columns\TextColumn::make('link_meeting')
+                    ->label('Link Konseling'),
             ])
             ->filters([
                 // ... (keep your existing filters)
@@ -118,11 +129,11 @@ class AppointmentResource extends Resource
             $counselor = $appointment->counselor;
             $newLink = $appointment->link_meeting;
 
-            $message = "🔔 *Appointment Update*\n\n";
-            $message .= "Your meeting link has been updated:\n";
-            $message .= "*When:* {$appointment->scheduled_at}\n";
-            $message .= "*New Link:* {$newLink}\n\n";
-            $message .= 'Thank you!';
+            $message = "🔔 *Update Jadwal*\n\n";
+            $message .= "Link konseling anda sudah di update:\n";
+            $message .= "*Pada:* {$appointment->scheduled_at}\n";
+            $message .= "*Link Baru:* {$newLink}\n\n";
+            $message .= 'Terimakasih!';
 
             $recipients = [];
 
@@ -183,12 +194,6 @@ class AppointmentResource extends Resource
                 ->send();
         }
     }
-
-    // Contoh di Resource
-public static function getEloquentQuery()
-{
-    return parent::getEloquentQuery()->with(['student', 'counselor']);
-}
 
     public static function getRelations(): array
     {

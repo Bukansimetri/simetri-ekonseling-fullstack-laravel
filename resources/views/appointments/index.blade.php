@@ -38,6 +38,11 @@
                                 <div class="status-badge badge-{{ $appointment->status }}">
                                     {{ ucfirst($appointment->status) }}
                                 </div>
+                                @if($appointment->type === 'group')
+                                <div class="group-indicator">
+                                    <i class="fas fa-users"></i> Group
+                                </div>
+                                @endif
                                 <div class="appointment-meta">
                                     <span class="meta-item">
                                         <i class="fas fa-calendar-alt"></i>
@@ -67,6 +72,50 @@
                                 </div>
                                 @endif
                             </div>
+
+                            <!-- Tampilkan peserta untuk group appointment -->
+                            @if($appointment->type === 'group')
+                            <div class="group-participants">
+                                <div class="detail-group">
+                                    <label>Peserta Group:</label>
+                                    <ul class="participant-list">
+                                        <li class="participant-item">
+                                            <span>{{ $appointment->student->user->name }}</span>
+                                            <span class="participant-role">(Pembuat)</span>
+                                        </li>
+                                        @foreach($appointment->students as $student)
+                                            @if($student->id != $appointment->student_id)
+                                            <li class="participant-item">
+                                                <span>{{ $student->user->name }}</span>
+                                                @if(auth()->user()->id == $appointment->student->user_id || auth()->user()->role == 'counselor')
+                                                <button class="btn-remove-participant"
+                                                        data-appointment="{{ $appointment->id }}"
+                                                        data-student="{{ $student->id }}">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                                @endif
+                                            </li>
+                                            @endif
+                                        @endforeach
+                                    </ul>
+                                </div>
+
+                                @if(auth()->user()->id == $appointment->student->user_id && $appointment->status == 'pending')
+                                <div class="detail-group add-participant-form">
+                                    <label>Tambah Peserta:</label>
+                                    <select class="add-participant-select"
+                                            data-appointment="{{ $appointment->id }}">
+                                        <option value="">Pilih peserta...</option>
+                                        @foreach($otherStudents as $student)
+                                            @if(!$appointment->students->contains($student->id))
+                                            <option value="{{ $student->id }}">{{ $student->user->name }}</option>
+                                            @endif
+                                        @endforeach
+                                    </select>
+                                </div>
+                                @endif
+                            </div>
+                            @endif
 
                             <div class="appointment-details">
                                 <div class="detail-group">
@@ -134,4 +183,137 @@
             </div>
         </div>
     </div>
+
+    <style>
+        /* Tambahan style untuk group appointment */
+        .group-indicator {
+            display: inline-flex;
+            align-items: center;
+            background-color: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+
+        .group-indicator i {
+            margin-right: 4px;
+            font-size: 10px;
+        }
+
+        .group-participants {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 6px;
+        }
+
+        .participant-list {
+            list-style: none;
+            padding: 0;
+            margin: 5px 0 0 0;
+        }
+
+        .participant-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .participant-role {
+            color: #666;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+
+        .btn-remove-participant {
+            background: none;
+            border: none;
+            color: #f44336;
+            cursor: pointer;
+            padding: 0 5px;
+            font-size: 12px;
+        }
+
+        .add-participant-form select {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle add participant
+            document.querySelectorAll('.add-participant-select').forEach(select => {
+                select.addEventListener('change', function() {
+                    const appointmentId = this.dataset.appointment;
+                    const studentId = this.value;
+
+                    if (!studentId) return;
+
+                    fetch(`/appointments/${appointmentId}/add-students`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            student_ids: [studentId]
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            alert(data.message || 'Gagal menambahkan peserta');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Terjadi kesalahan');
+                    });
+
+                    // Reset select
+                    this.value = '';
+                });
+            });
+
+            // Handle remove participant
+            document.querySelectorAll('.btn-remove-participant').forEach(button => {
+                button.addEventListener('click', function() {
+                    if (!confirm('Apakah Anda yakin ingin menghapus peserta ini?')) return;
+
+                    const appointmentId = this.dataset.appointment;
+                    const studentId = this.dataset.student;
+
+                    fetch(`/appointments/${appointmentId}/remove-student/${studentId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            alert(data.message || 'Gagal menghapus peserta');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Terjadi kesalahan');
+                    });
+                });
+            });
+        });
+    </script>
 </x-layout>

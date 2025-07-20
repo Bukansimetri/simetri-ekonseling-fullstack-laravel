@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Appointment;
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class AppointmentController extends Controller
 {
@@ -36,97 +37,127 @@ class AppointmentController extends Controller
         ]);
     }
 
+    // Method untuk membuat appointment individual
     public function store(Request $request)
     {
-        try {
-            // Validasi request
-            $request->validate([
-                'counselor_id' => 'required|exists:counselors,id',
-                'scheduled_at' => 'required|date',
-                'notes' => 'nullable|string',
-            ]);
+        $validator = Validator::make($request->all(), [
+            'student_id' => 'required|exists:students,id',
+            'counselor_id' => 'required|exists:counselors,id',
+            'scheduled_at' => 'required|date',
+            'notes' => 'nullable|string',
+        ]);
 
-            // Ambil student_id dari user login
-            $user = Auth::user();
-            if (! $user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda harus login sebagai student untuk membuat janji.',
-                ], 401);
-            }
-
-            $appointment = new Appointment;
-            $appointment->student_id = $user->student->id;
-            $appointment->counselor_id = $request->counselor_id;
-            $appointment->scheduled_at = $request->scheduled_at;
-            $appointment->status = 'pending';
-            $appointment->notes = $request->notes ?? '';
-            $appointment->save();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Janji berhasil dibuat!',
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Appointment Store Error', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan di server: '.$e->getMessage(),
-            ], 500);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
         }
+
+        $appointment = Appointment::create([
+            'student_id' => $request->student_id,
+            'counselor_id' => $request->counselor_id,
+            'scheduled_at' => $request->scheduled_at,
+            'status' => 'scheduled',
+            'notes' => $request->notes,
+            'type' => 'individual',
+        ]);
+
+        return response()->json($appointment, 201);
     }
 
-    // Update status appointment (confirm/reject)
-    public function update(Request $request, Appointment $appointment)
+    // Method untuk membuat group appointment
+    public function storeGroup(Request $request)
     {
-        $user = Auth::user();
-        $status = $request->input('status');
+        $validator = Validator::make($request->all(), [
+            'student_id' => 'required|exists:students,id', // student utama/pembuat
+            'counselor_id' => 'required|exists:counselors,id',
+            'scheduled_at' => 'required|date',
+            'notes' => 'nullable|string',
+            'additional_students' => 'required|array',
+            'additional_students.*' => 'exists:students,id',
+        ]);
 
-        // Validasi bahwa hanya counselor yang bisa update status
-        if ($user->role !== 'counselor' || $appointment->counselor_id !== $user->id) {
-            abort(403, 'Unauthorized action.');
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
         }
 
-        // Validasi status yang diperbolehkan
-        if (! in_array($status, ['confirmed', 'rejected'])) {
-            abort(400, 'Invalid status');
-        }
+        // Buat appointment
+        $appointment = Appointment::create([
+            'student_id' => $request->student_id, // student utama
+            'counselor_id' => $request->counselor_id,
+            'scheduled_at' => $request->scheduled_at,
+            'status' => 'scheduled',
+            'notes' => $request->notes,
+            'type' => 'group',
+        ]);
 
-        // Validasi bahwa hanya appointment pending yang bisa diupdate
-        if ($appointment->status !== 'pending') {
-            return back()->with('error', 'Hanya appointment dengan status pending yang bisa diubah');
-        }
+        // Attach students tambahan
+        $appointment->students()->attach($request->additional_students);
+        // Attach student utama juga ke pivot table
+        $appointment->students()->attach($request->student_id);
 
-        $appointment->update(['status' => $status]);
-
-        $message = $status === 'confirmed'
-            ? 'Appointment telah dikonfirmasi'
-            : 'Appointment telah ditolak';
-
-        return back()->with('success', $message);
+        return response()->json([
+            'appointment' => $appointment,
+            'participants' => $appointment->students,
+        ], 201);
     }
 
-    // Membatalkan appointment (student)
-    public function destroy(Appointment $appointment)
+    // Method untuk menambahkan student ke group appointment
+    public function addStudentToGroup(Request $request, $appointmentId)
     {
-        $user = Auth::user();
+        $validator = Validator::make($request->all(), [
+            'student_ids' => 'required|array',
+            'student_ids.*' => 'exists:students,id',
+        ]);
 
-        // Validasi bahwa hanya student pemilik appointment yang bisa membatalkan
-        if ($user->role !== 'student' || $appointment->student_id !== $user->id) {
-            abort(403, 'Unauthorized action.');
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
         }
 
-        // Validasi bahwa hanya appointment pending yang bisa dibatalkan
-        if ($appointment->status !== 'pending') {
-            return back()->with('error', 'Hanya appointment dengan status pending yang bisa dibatalkan');
+        $appointment = Appointment::findOrFail($appointmentId);
+
+        // Pastikan ini adalah group appointment
+        if ($appointment->type !== 'group') {
+            return response()->json(['message' => 'Hanya group appointment yang bisa menambahkan peserta'], 400);
         }
 
-        $appointment->delete();
+        // Tambahkan students
+        $appointment->students()->syncWithoutDetaching($request->student_ids);
 
-        return back()->with('success', 'Appointment berhasil dibatalkan');
+        return response()->json([
+            'message' => 'Students added successfully',
+            'participants' => $appointment->students,
+        ]);
+    }
+
+    // Method untuk menghapus student dari group appointment
+    public function removeStudentFromGroup(Request $request, $appointmentId, $studentId)
+    {
+        $appointment = Appointment::findOrFail($appointmentId);
+
+        // Pastikan ini adalah group appointment
+        if ($appointment->type !== 'group') {
+            return response()->json(['message' => 'Hanya group appointment yang bisa menghapus peserta'], 400);
+        }
+
+        // Pastikan student utama tidak dihapus
+        if ($appointment->student_id == $studentId) {
+            return response()->json(['message' => 'Tidak bisa menghapus student utama dari appointment'], 400);
+        }
+
+        $appointment->students()->detach($studentId);
+
+        return response()->json(['message' => 'Student removed successfully']);
+    }
+
+    // Method untuk menampilkan detail appointment dengan participants
+    public function show($id)
+    {
+        $appointment = Appointment::with(['students', 'mainStudent', 'counselor'])->findOrFail($id);
+
+        return response()->json([
+            'appointment' => $appointment,
+            'main_student' => $appointment->mainStudent,
+            'participants' => $appointment->students,
+            'counselor' => $appointment->counselor,
+        ]);
     }
 }
